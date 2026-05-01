@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: hive-mcp-audit-readiness
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: HIVE_BASE
+        value: https://hivemorph.onrender.com
+    healthCheckPath: /health

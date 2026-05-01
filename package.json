@@ -1,0 +1,48 @@
+{
+  "name": "hive-mcp-audit-readiness",
+  "version": "1.0.0",
+  "description": "MCP server for HiveAudit Readiness — multi-jurisdictional AI compliance readiness scoring (EU AI Act, Colorado AI Act, CCPA, SB942, LL144, HIPAA) with sourced penalty math.",
+  "type": "module",
+  "main": "server.js",
+  "bin": {
+    "hive-mcp-audit-readiness": "./server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "ai-agents",
+    "llm",
+    "compliance",
+    "audit",
+    "eu-ai-act",
+    "colorado-ai-act",
+    "ccpa",
+    "sb942",
+    "ll144",
+    "hipaa",
+    "nist-ai-rmf",
+    "iso-42001",
+    "regulatory",
+    "governance",
+    "hive",
+    "hive-civilization"
+  ],
+  "author": "Steve Rotzin <steve@thehiveryiq.com> (https://www.thehiveryiq.com)",
+  "license": "MIT",
+  "homepage": "https://github.com/srotzin/hive-mcp-audit-readiness",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/srotzin/hive-mcp-audit-readiness"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,78 @@
+# Smithery Registry — HiveAudit Readiness MCP Server
+# https://smithery.ai
+
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    properties: {}
+    required: []
+  url: https://hive-mcp-audit-readiness.onrender.com/mcp
+
+name: hive-mcp-audit-readiness
+displayName: HiveAudit Readiness — multi-jurisdictional AI compliance scoring
+version: "1.0.0"
+description: >
+  MCP server for HiveAudit Readiness. Computes penalty exposure and audit-tier
+  recommendations across EU AI Act (Reg 2024/1689 Art 99), Colorado AI Act
+  (SB 24-205), CCPA, Cal SB 942, NYC LL 144, HIPAA, NIST AI RMF, and ISO 42001.
+  Free, no auth, 10 requests / IP / hour. Returns specific Article-citing
+  compliance gaps and a four-tier audit recommendation
+  (STARTER / STANDARD / ENTERPRISE / FEDERAL).
+
+author:
+  name: Steve Rotzin
+  email: steve@thehiveryiq.com
+  url: https://www.thehiveryiq.com
+
+license: MIT
+homepage: https://github.com/srotzin/hive-mcp-audit-readiness
+repository:
+  type: git
+  url: https://github.com/srotzin/hive-mcp-audit-readiness
+
+transport: streamable-http
+endpoint: https://hive-mcp-audit-readiness.onrender.com/mcp
+protocol: "2024-11-05"
+
+categories:
+  - compliance
+  - governance
+  - audit
+  - legal
+  - ai-safety
+  - regulatory
+
+tags:
+  - mcp
+  - eu-ai-act
+  - colorado-ai-act
+  - ccpa
+  - hipaa
+  - audit
+  - compliance
+  - hive
+  - hive-civilization
+
+tools:
+  - name: audit_readiness_score
+    description: >
+      Compute a multi-jurisdictional AI compliance readiness score: penalty
+      exposure (EUR + USD), Article-citing compliance gaps, recommended audit
+      tier, and nearest enforcement deadline. Free, no auth.
+  - name: audit_get_tier_pricing
+    description: >
+      Returns the four published HiveAudit tier prices and bracket thresholds
+      (STARTER $500 / STANDARD $1,500 / ENTERPRISE $2,500 / FEDERAL $7,500 yr).
+
+runtime:
+  type: node
+  version: ">=18"
+  command: node server.js
+  env:
+    - name: PORT
+      default: "3000"
+      required: false
+    - name: HIVE_BASE
+      default: "https://hivemorph.onrender.com"
+      required: false
