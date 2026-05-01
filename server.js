@@ -172,6 +172,48 @@ app.get('/.well-known/mcp.json', (req, res) => {
   });
 });
 
+// ─── /assess — the recruitment-envelope readiness URL ─────────────────────
+// JSON for agents, HTML form for humans. Same URL, content-negotiated.
+
+app.get('/assess', (req, res) => {
+  const accept = (req.headers.accept || '').toLowerCase();
+  const wantsJson = accept.includes('application/json') || req.query.format === 'json';
+  if (wantsJson) {
+    return res.json({
+      service: SERVICE_NAME,
+      version: VERSION,
+      description: 'AI compliance readiness assessment. Free, no auth, rate-limited 10/IP/hr.',
+      run: {
+        mcp: { endpoint: 'POST /mcp', tool: 'audit_readiness_score', spec: 'JSON-RPC 2.0 (MCP 2024-11-05)' },
+        rest: { endpoint: `POST ${HIVE_BASE}/v1/audit/readiness`, content_type: 'application/json' },
+      },
+      pricing: { tool: 'audit_get_tier_pricing', detail: TIER_CARD.tiers.map(t => ({ id: t.id, price_usd: t.price_usd, exposure_ceiling_usd: t.exposure_ceiling_usd })) },
+      frameworks: ['eu_ai_act', 'co_ai_act', 'ccpa', 'ca_sb942', 'nyc_ll144', 'hipaa', 'gdpr', 'nist_ai_rmf', 'iso_42001'],
+      brand: BRAND_GOLD,
+    });
+  }
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>HiveAudit Readiness · Assessment</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{--g:${BRAND_GOLD}}body{font:15px/1.55 ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;color:#111;background:#faf8f1;margin:0;padding:40px 20px;max-width:760px;margin:auto}h1{color:var(--g);margin:0 0 6px;font-size:28px;font-weight:600;letter-spacing:-0.01em}h2{color:#111;font-size:18px;border-bottom:1px solid #e6dfc8;padding-bottom:6px;margin:32px 0 12px}p{color:#333}code{background:#f0e9d2;padding:2px 6px;border-radius:3px;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}pre{background:#f0e9d2;padding:14px;border-radius:6px;overflow:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.grid{display:grid;grid-template-columns:max-content 1fr;gap:8px 18px;margin:14px 0}a{color:var(--g);text-decoration:none}a:hover{text-decoration:underline}.muted{color:#666;font-size:13px}</style></head><body><h1>HiveAudit Readiness</h1><p>Multi-jurisdictional AI compliance readiness scoring with sourced penalty math. Free, no auth, no email gate.</p><div class="grid"><strong>Frameworks:</strong>EU AI Act · Colorado AI Act · CCPA · SB942 · NYC LL144 · HIPAA · GDPR · NIST AI RMF · ISO 42001<strong>Rate limit:</strong>10 / IP / hour<strong>Output:</strong>Penalty exposure (EUR + USD) · article-level gaps · recommended audit tier · nearest enforcement deadline</div><h2>Run via MCP (agents)</h2><pre>curl -s -X POST https://hive-mcp-audit-readiness.onrender.com/mcp \\
+  -H 'content-type: application/json' \\
+  -d '{
+    "jsonrpc":"2.0","id":1,"method":"tools/call",
+    "params":{
+      "name":"audit_readiness_score",
+      "arguments":{
+        "organization_country":"DE",
+        "jurisdictions":["EU","US-CA"],
+        "data_volume_records":2500000,
+        "agent_count":12,
+        "monthly_inference_calls":4000000,
+        "sectors":["finance","employment"],
+        "frameworks":["eu_ai_act","co_ai_act","ccpa","gdpr"]
+      }
+    }
+  }'</pre><h2>Run via REST (humans / scripts)</h2><pre>curl -s -X POST ${HIVE_BASE}/v1/audit/readiness \\
+  -H 'content-type: application/json' \\
+  -d '{ "organization_country": "DE", "jurisdictions": ["EU"], ... }'</pre><h2>Pricing tiers</h2><div class="grid">${TIER_CARD.tiers.map(t => `<strong>${t.label}</strong><span>$${t.price_usd.toLocaleString()} · ${t.exposure_ceiling_usd ? '<$'+t.exposure_ceiling_usd.toLocaleString()+' exposure' : 'unbounded'} · ${t.description}</span>`).join('')}</div><p class="muted">Discovery: <a href="/.well-known/mcp.json">/.well-known/mcp.json</a> · Health: <a href="/health">/health</a> · Repo: <a href="https://github.com/srotzin/hive-mcp-audit-readiness">github.com/srotzin/hive-mcp-audit-readiness</a></p></body></html>`);
+});
+
 app.get('/', (req, res) => {
   res.set('Content-Type', 'text/html; charset=utf-8');
   res.send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${SERVICE_NAME} · HiveAudit Readiness MCP</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:14px/1.55 ui-sans-serif,system-ui,-apple-system,sans-serif;color:#111;background:#fafaf7;margin:0;padding:32px;max-width:780px;margin:auto}h1{color:${BRAND_GOLD};margin:0 0 4px}h2{color:${BRAND_GOLD};border-bottom:1px solid #e9e3d2;padding-bottom:4px;margin-top:28px}code{background:#f1ecdf;padding:2px 5px;border-radius:3px}a{color:${BRAND_GOLD}}.grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:14px 0}</style></head><body><h1>${SERVICE_NAME}</h1><p><strong>HiveAudit Readiness MCP</strong> — multi-jurisdictional AI compliance readiness scoring with sourced penalty math.</p><div class="grid"><strong>Endpoint:</strong><code>POST /mcp</code><strong>Discovery:</strong><code>GET /.well-known/mcp.json</code><strong>Backend:</strong><code>${HIVE_BASE}/v1/audit/readiness</code><strong>Auth:</strong>none<strong>Rate limit:</strong>10 / IP / hour<strong>Repo:</strong><a href="https://github.com/srotzin/${SERVICE_NAME}">github.com/srotzin/${SERVICE_NAME}</a></div><h2>Tools</h2><ul>${TOOLS.map(t => `<li><code>${t.name}</code> — ${t.description}</li>`).join('')}</ul><h2>Frameworks scored</h2><p>EU Reg 2024/1689 (EU AI Act) Art 99 · Colorado AI Act SB 24-205 (eff Jun 30 2026) · California CCPA · Cal SB 942 · NYC Local Law 144 · HIPAA · NIST AI RMF · ISO 42001.</p></body></html>`);
