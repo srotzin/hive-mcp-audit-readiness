@@ -13,6 +13,8 @@
   <a href="https://hive-mcp-audit-readiness.onrender.com/health"><img alt="Live" src="https://img.shields.io/badge/service-live-C08D23?style=flat-square"/></a>
   <a href="https://github.com/srotzin/hive-mcp-audit-readiness/releases"><img alt="Release" src="https://img.shields.io/github/v/release/srotzin/hive-mcp-audit-readiness?style=flat-square&color=C08D23"/></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-C08D23?style=flat-square"/></a>
+  <a href="https://github.com/srotzin/hive-mcp-audit-readiness/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://img.shields.io/badge/CodeQL-enabled-C08D23?style=flat-square"/></a>
+  <a href="https://www.opensanctions.org/"><img alt="OpenSanctions" src="https://img.shields.io/badge/OpenSanctions-integrated-C08D23?style=flat-square"/></a>
 </p>
 
 <p align="center">

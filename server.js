@@ -46,6 +46,31 @@ const TOOLS = [
     name: 'audit_get_tier_pricing',
     description: 'Get the four published HiveAudit tier prices and bracket thresholds: STARTER ($500, <$500K exposure), STANDARD ($1,500, <$5M), ENTERPRISE ($2,500, <$50M), FEDERAL ($7,500/yr, ≥$50M or federal agency). Returns the tier card mapping plus the trial CTA. No backend call — inlined for offline discovery.',
     inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'audit_sanctions_screen',
+    description: 'Screen one or more entities (organization or individual) against the OpenSanctions consolidated sanctions database. Calls the OpenSanctions free public Match API (https://api.opensanctions.org). No API key required for the public endpoint. Returns per-entity matches with score, dataset (e.g. eu_fsf, us_ofac_sdn), and source URL. Use this as the OFAC / EU FSF / UN consolidated screen step inside a HiveAudit Readiness assessment. Source: https://www.opensanctions.org.',
+    inputSchema: {
+      type: 'object',
+      required: ['entities'],
+      properties: {
+        entities: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['schema', 'name'],
+            properties: {
+              schema: { type: 'string', enum: ['Person', 'Organization', 'LegalEntity', 'Company'], description: 'OpenSanctions schema. Use Person for individuals, Organization or Company for entities.' },
+              name: { type: 'string', description: 'Full name of the entity.' },
+              country: { type: 'string', description: 'Optional ISO 3166-1 alpha-2 country code to disambiguate matches.' },
+              birthDate: { type: 'string', description: 'Optional YYYY-MM-DD for Person entities.' }
+            }
+          },
+          description: 'Entities to screen. Up to 100 per call.'
+        },
+        threshold: { type: 'number', description: 'Match score threshold (0–1). Default 0.7. Returns only matches ≥ threshold.' }
+      }
+    }
   }
 ];
 
@@ -76,6 +101,64 @@ const TIER_CARD = {
 
 // ─── HTTP helpers ────────────────────────────────────────────────────────────
 
+// ─── OpenSanctions screen (free public API, no key required) ─────────────────
+
+const OPENSANCTIONS_BASE = process.env.OPENSANCTIONS_BASE || 'https://api.opensanctions.org';
+const OPENSANCTIONS_DATASET = process.env.OPENSANCTIONS_DATASET || 'sanctions';
+const OPENSANCTIONS_API_KEY = process.env.OPENSANCTIONS_API_KEY || ''; // optional, only for paid tier
+
+async function openSanctionsMatch(args) {
+  const entities = Array.isArray(args.entities) ? args.entities.slice(0, 100) : [];
+  const threshold = typeof args.threshold === 'number' ? args.threshold : 0.7;
+  if (entities.length === 0) {
+    return { ok: false, error: 'no_entities', detail: 'entities array is empty' };
+  }
+  const queries = {};
+  entities.forEach((e, i) => {
+    queries[`q${i}`] = {
+      schema: e.schema || 'Organization',
+      properties: {
+        name: [e.name],
+        ...(e.country ? { country: [e.country] } : {}),
+        ...(e.birthDate ? { birthDate: [e.birthDate] } : {})
+      }
+    };
+  });
+  const url = `${OPENSANCTIONS_BASE}/match/${OPENSANCTIONS_DATASET}?threshold=${encodeURIComponent(threshold)}`;
+  const headers = { 'Content-Type': 'application/json' };
+  if (OPENSANCTIONS_API_KEY) headers['Authorization'] = `ApiKey ${OPENSANCTIONS_API_KEY}`;
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ queries }),
+      signal: AbortSignal.timeout(20000)
+    });
+  } catch (err) {
+    return { ok: false, error: 'network', detail: err.message };
+  }
+  let data;
+  try { data = await res.json(); } catch { data = { raw: await res.text() }; }
+  if (!res.ok) return { ok: false, status: res.status, detail: data };
+  const out = { ok: true, source: 'OpenSanctions consolidated sanctions API', dataset: OPENSANCTIONS_DATASET, threshold, results: [] };
+  for (const [k, v] of Object.entries(data.responses || {})) {
+    const idx = parseInt(k.slice(1), 10);
+    const entity = entities[idx] || null;
+    const matches = (v.results || []).map(r => ({
+      id: r.id,
+      schema: r.schema,
+      caption: r.caption,
+      score: r.score,
+      datasets: r.datasets,
+      countries: r.properties?.country || [],
+      url: `https://www.opensanctions.org/entities/${r.id}/`
+    }));
+    out.results.push({ query: entity, match_count: matches.length, hit: matches.length > 0, matches });
+  }
+  return out;
+}
+
 async function hivePost(path, body) {
   const res = await fetch(`${HIVE_BASE}${path}`, {
     method: 'POST',
@@ -98,6 +181,9 @@ async function executeTool(name, args) {
     }
     case 'audit_get_tier_pricing': {
       return { type: 'text', text: JSON.stringify(TIER_CARD, null, 2) };
+    }
+    case 'audit_sanctions_screen': {
+      return { type: 'text', text: JSON.stringify(await openSanctionsMatch(args || {}), null, 2) };
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
