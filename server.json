@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.srotzin/hive-mcp-audit-readiness",
-  "title": "HiveAudit Readiness",
-  "description": "Multi-jurisdictional AI compliance readiness scoring with sourced penalty math.",
+  "description": "Multi-jurisdictional AI compliance readiness scoring \u2014 EU AI Act, Colorado AI, CCPA, NYC LL 144.",
+  "title": "Hive Mcp Audit Readiness",
   "version": "1.0.0",
-  "websiteUrl": "https://www.thehiveryiq.com",
-  "remotes": [
-    {
-      "url": "https://hive-mcp-audit-readiness.onrender.com/mcp",
-      "type": "streamable-http"
-    }
-  ],
   "repository": {
     "url": "https://github.com/srotzin/hive-mcp-audit-readiness",
     "source": "github"
-  }
+  },
+  "websiteUrl": "https://thehiveryiq.com",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://hive-mcp-gateway.onrender.com/audit-readiness/mcp"
+    }
+  ]
 }
